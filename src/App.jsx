@@ -25,6 +25,9 @@ const emptyCar = {
   model: "",
   year: "",
   photo: "",
+  status: "available",
+  estimatedMarketValue: "",
+  askingPrice: "",
   saleType: "cash",
   auctionPrice: "",
   repairCost: "",
@@ -78,7 +81,19 @@ function getInvestment(car) {
   );
 }
 
+function isSold(car) {
+  return car.status === "sold";
+}
+
+function getEstimatedValue(car) {
+  return numberValue(car.estimatedMarketValue || car.askingPrice);
+}
+
 function getExpectedSaleValue(car) {
+  if (!isSold(car)) {
+    return getEstimatedValue(car);
+  }
+
   if (car.saleType === "finance") {
     return (
       numberValue(car.downPayment) +
@@ -90,6 +105,8 @@ function getExpectedSaleValue(car) {
 }
 
 function getCollectedSoFar(car) {
+  if (!isSold(car)) return 0;
+
   if (car.saleType === "finance") {
     return (
       numberValue(car.downPayment) +
@@ -101,12 +118,18 @@ function getCollectedSoFar(car) {
 }
 
 function getBalanceRemaining(car) {
+  if (!isSold(car)) return 0;
   if (car.saleType !== "finance") return 0;
   return Math.max(getExpectedSaleValue(car) - getCollectedSoFar(car), 0);
 }
 
 function getExpectedProfit(car) {
   return getExpectedSaleValue(car) - getInvestment(car);
+}
+
+function getInventoryEquity(car) {
+  if (isSold(car)) return 0;
+  return getEstimatedValue(car) - getInvestment(car);
 }
 
 function getCollectedProfit(car) {
@@ -187,7 +210,8 @@ export default function CarSalesInventoryDashboard() {
 
     return {
       cars: cars.length,
-      financedCars: cars.filter((car) => car.saleType === "finance").length,
+      financedCars: cars.filter((car) => car.status === "sold" && car.saleType === "finance").length,
+      availableCars: cars.filter((car) => car.status !== "sold").length,
       invested,
       expected,
       collected,
@@ -201,31 +225,17 @@ export default function CarSalesInventoryDashboard() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
- async function handleImageUpload(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
+  function handleImageUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const fileName = `${Date.now()}-${file.name}`;
-
-  const { data, error } = await supabase.storage
-    .from("cars")
-    .upload(fileName, file);
-
-  if (error) {
-    console.error(error);
-    alert("Error uploading image");
-    return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm((prev) => ({ ...prev, photo: reader.result }));
+    };
+    reader.readAsDataURL(file);
   }
 
-  const { data: publicUrlData } = supabase.storage
-    .from("cars")
-    .getPublicUrl(fileName);
-
-  setForm((prev) => ({
-    ...prev,
-    photo: publicUrlData.publicUrl,
-  }));
-}
   function handleNewCar() {
     setSelectedCarId("new");
     setForm({ ...emptyCar, id: null });
@@ -346,6 +356,7 @@ export default function CarSalesInventoryDashboard() {
           <SummaryCard title="Expected Profit" value={money(summary.expectedProfit)} icon={<Wrench />} highlight={summary.expectedProfit >= 0} />
           <SummaryCard title="Profit Collected" value={money(summary.collectedProfit)} icon={<DollarSign />} highlight={summary.collectedProfit >= 0} />
           <SummaryCard title="Financed Cars" value={summary.financedCars} icon={<CreditCard />} />
+          <SummaryCard title="Available Cars" value={summary.availableCars} icon={<Car />} />
         </section>
 
         <main className="grid gap-4 md:gap-6 xl:grid-cols-[0.9fr_1.4fr]">
@@ -385,9 +396,9 @@ export default function CarSalesInventoryDashboard() {
                       </div>
                       <div className="p-3">
                         <p className="line-clamp-1 font-black text-[#221433]">{car.year} {car.model || "Untitled Vehicle"}</p>
-                        <p className="mt-1 text-xs font-bold uppercase text-[#7d3fb2]">{car.saleType === "finance" ? "Credit Sale" : "Cash Sale"}</p>
+                        <p className="mt-1 text-xs font-bold uppercase text-[#7d3fb2]">{car.status === "sold" ? (car.saleType === "finance" ? "Credit Sale" : "Cash Sale") : "Available / Not Sold"}</p>
                         <p className={`mt-1 text-sm font-black ${getExpectedProfit(car) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                          {money(getExpectedProfit(car))} expected
+                          {money(car.status === "sold" ? getExpectedProfit(car) : getInventoryEquity(car))} {car.status === "sold" ? "expected" : "estimated equity"}
                         </p>
                         {car.saleType === "finance" && <p className="text-xs text-slate-500">{money(getBalanceRemaining(car))} balance</p>}
                       </div>
@@ -450,7 +461,14 @@ export default function CarSalesInventoryDashboard() {
                     <Input label="Year" value={form.year} onChange={(v) => handleChange("year", v)} />
                     <Input label="Purchase Date" type="date" value={form.purchaseDate} onChange={(v) => handleChange("purchaseDate", v)} />
                     <Input label="Sold Date" type="date" value={form.soldDate} onChange={(v) => handleChange("soldDate", v)} />
+                    <StatusSelect label="Vehicle Status" value={form.status} onChange={(v) => handleChange("status", v)} />
                     <Select label="Sale Type" value={form.saleType} onChange={(v) => handleChange("saleType", v)} />
+                    {form.status !== "sold" && (
+                      <>
+                        <Input label="Estimated Market Value" type="number" value={form.estimatedMarketValue} onChange={(v) => handleChange("estimatedMarketValue", v)} />
+                        <Input label="Asking Price / List Price" type="number" value={form.askingPrice} onChange={(v) => handleChange("askingPrice", v)} />
+                      </>
+                    )}
                   </section>
 
                   <SectionTitle title="Cost Breakdown" />
@@ -468,7 +486,16 @@ export default function CarSalesInventoryDashboard() {
                     <Input label="Miscellaneous" type="number" value={form.miscCost} onChange={(v) => handleChange("miscCost", v)} />
                   </section>
 
-                  {form.saleType === "cash" ? (
+                  {form.status !== "sold" ? (
+                    <>
+                      <SectionTitle title="Available / Not Sold Yet" />
+                      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
+                        <MiniTotal title="Money Invested" value={money(formTotals.investment)} />
+                        <MiniTotal title="Estimated Value" value={money(getEstimatedValue(form))} />
+                        <MiniTotal title="Estimated Equity" value={money(getInventoryEquity(form))} />
+                      </section>
+                    </>
+                  ) : form.saleType === "cash" ? (
                     <>
                       <SectionTitle title="Cash Sale" />
                       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
@@ -573,6 +600,23 @@ function Select({ label, value, onChange }) {
       >
         <option value="cash">Cash Sale</option>
         <option value="finance">Credit / Monthly Payments</option>
+      </select>
+    </div>
+  );
+}
+
+function StatusSelect({ label, value, onChange }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-black uppercase tracking-wide text-[#7d3fb2]">{label}</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-purple-100 bg-white px-4 py-3 text-base font-semibold text-[#221433] outline-none transition focus:border-[#7d3fb2] focus:ring-4 focus:ring-purple-100 md:text-sm"
+      >
+        <option value="available">Available / Not Sold Yet</option>
+        <option value="listed">Listed For Sale</option>
+        <option value="sold">Sold</option>
       </select>
     </div>
   );
