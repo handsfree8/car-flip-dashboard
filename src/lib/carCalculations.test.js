@@ -18,6 +18,8 @@ import {
   getCostBreakdown,
   getProfitByMonth,
   getAgingInventory,
+  getCarProfitOrEquity,
+  getVehiclesAtLoss,
   emptyCar,
 } from "./carCalculations.js";
 
@@ -273,4 +275,24 @@ test("getAgingInventory sorts unsold cars by days descending and flags stale one
   assert.equal(aging[0].days > aging[1].days, true);
   assert.equal(aging[0].isStale, true); // ~80 days
   assert.equal(aging[1].isStale, false); // ~19 days
+});
+
+test("getCarProfitOrEquity uses expected profit when sold, equity when not", () => {
+  const sold = { ...emptyCar, status: "sold", saleType: "cash", soldPrice: "8000", auctionPrice: "5000" };
+  assert.equal(getCarProfitOrEquity(sold), 3000);
+
+  const available = { ...emptyCar, status: "available", estimatedMarketValue: "9000", auctionPrice: "6000" };
+  assert.equal(getCarProfitOrEquity(available), 3000);
+});
+
+test("getVehiclesAtLoss returns only negative entries, worst first", () => {
+  const cars = [
+    { ...emptyCar, status: "sold", saleType: "cash", soldPrice: "4000", auctionPrice: "5000" }, // -1000
+    { ...emptyCar, status: "available", estimatedMarketValue: "1000", auctionPrice: "4000" }, // -3000
+    { ...emptyCar, status: "sold", saleType: "cash", soldPrice: "9000", auctionPrice: "5000" }, // +4000, excluded
+  ];
+  const atLoss = getVehiclesAtLoss(cars);
+  assert.equal(atLoss.length, 2);
+  assert.equal(atLoss[0].amount, -3000);
+  assert.equal(atLoss[1].amount, -1000);
 });

@@ -217,3 +217,14 @@ export function getAgingInventory(cars, thresholdDays = 45, referenceDate = new 
     .sort((a, b) => b.days - a.days)
     .map((entry) => ({ ...entry, isStale: entry.days > thresholdDays }));
 }
+
+export function getCarProfitOrEquity(car) {
+  return isSold(car) ? getExpectedProfit(car) : getInventoryEquity(car);
+}
+
+export function getVehiclesAtLoss(cars) {
+  return cars
+    .map((car) => ({ car, amount: getCarProfitOrEquity(car) }))
+    .filter((entry) => entry.amount < 0)
+    .sort((a, b) => a.amount - b.amount);
+}
