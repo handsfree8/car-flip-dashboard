@@ -16,6 +16,7 @@ import SummaryCards from "@/components/SummaryCards";
 import VehicleGrid from "@/components/VehicleGrid";
 import VehicleForm from "@/components/VehicleForm";
 import ReportsPanel from "@/components/ReportsPanel";
+import AttentionBanner from "@/components/AttentionBanner";
 
 const TABS = [
   { value: "inventory", label: "Inventario" },
@@ -108,6 +109,11 @@ export default function CarSalesInventoryDashboard() {
   function handleSelectCar(car) {
     setSelectedCarId(car.id);
     setForm(car);
+  }
+
+  function handleSelectCarFromAttention(car) {
+    handleSelectCar(car);
+    setActiveTab("inventory");
   }
 
   async function handleSave() {
@@ -211,6 +217,8 @@ export default function CarSalesInventoryDashboard() {
         </header>
 
         <SummaryCards summary={summary} />
+
+        <AttentionBanner cars={cars} onSelectCar={handleSelectCarFromAttention} />
 
         <div className="flex gap-2 rounded-2xl bg-white p-1.5 shadow-sm">
           {TABS.map((tab) => (
