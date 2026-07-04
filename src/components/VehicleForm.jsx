@@ -55,7 +55,7 @@ export default function VehicleForm({ form, formTotals, onChange, onSave, onDele
           </h2>
           <p
             className={`mt-2 text-lg font-black sm:text-xl ${
-              formTotals.expectedProfit >= 0 ? "text-emerald-600" : "text-red-600"
+              formTotals.expectedProfit >= 0 ? "text-emerald-600" : "text-amber-700"
             }`}
           >
             Expected Profit: {money(formTotals.expectedProfit)}
