@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import { Car, ImagePlus } from "lucide-react";
 import {
   money,
-  getExpectedProfit,
-  getInventoryEquity,
+  getCarProfitOrEquity,
   getBalanceRemaining,
   getDaysInInventory,
   getPaymentStatus,
@@ -42,11 +41,7 @@ function sortCars(cars, sortBy) {
     return sorted.sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
   }
   if (sortBy === "profit") {
-    return sorted.sort((a, b) => {
-      const profitA = a.status === "sold" ? getExpectedProfit(a) : getInventoryEquity(a);
-      const profitB = b.status === "sold" ? getExpectedProfit(b) : getInventoryEquity(b);
-      return profitB - profitA;
-    });
+    return sorted.sort((a, b) => getCarProfitOrEquity(b) - getCarProfitOrEquity(a));
   }
   if (sortBy === "aging") {
     return sorted.sort((a, b) => (getDaysInInventory(b) ?? -1) - (getDaysInInventory(a) ?? -1));
@@ -160,10 +155,10 @@ export default function VehicleGrid({ cars, selectedCarId, onSelectCar }) {
                   </p>
                   <p
                     className={`mt-1 text-sm font-black ${
-                      getExpectedProfit(car) >= 0 ? "text-emerald-600" : "text-red-600"
+                      getCarProfitOrEquity(car) >= 0 ? "text-emerald-600" : "text-amber-700"
                     }`}
                   >
-                    {money(car.status === "sold" ? getExpectedProfit(car) : getInventoryEquity(car))}{" "}
+                    {money(getCarProfitOrEquity(car))}{" "}
                     {car.status === "sold" ? "expected" : "estimated equity"}
                   </p>
                   {car.saleType === "finance" && car.status === "sold" && (
