@@ -159,9 +159,9 @@ export function getPaymentStatus(car, referenceDate = new Date()) {
   if (monthly <= 0 || totalPayments <= 0) return NOT_OVERDUE;
 
   const monthsElapsed =
-    (referenceDate.getFullYear() - start.getFullYear()) * 12 +
-    (referenceDate.getMonth() - start.getMonth()) +
-    (referenceDate.getDate() >= start.getDate() ? 1 : 0);
+    (referenceDate.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+    (referenceDate.getUTCMonth() - start.getUTCMonth()) +
+    (referenceDate.getUTCDate() >= start.getUTCDate() ? 1 : 0);
 
   const expectedPayments = Math.min(Math.max(monthsElapsed, 0), totalPayments);
   const received = numberValue(car.paymentsReceived);
@@ -200,7 +200,7 @@ export function getProfitByMonth(cars) {
     const date = new Date(car.soldDate);
     if (Number.isNaN(date.getTime())) return;
 
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
     totals.set(key, (totals.get(key) || 0) + getExpectedProfit(car));
   });
 

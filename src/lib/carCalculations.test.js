@@ -199,6 +199,29 @@ test("getPaymentStatus: not overdue when caught up", () => {
   assert.equal(result.paymentsBehind, 0);
 });
 
+test("getPaymentStatus: month-boundary dates are read timezone-independently (UTC getters)", () => {
+  // Regression test: date-only strings like "2026-01-01" parse as UTC midnight.
+  // Reading components with local getters (getFullYear/getMonth/getDate) instead of
+  // UTC getters would under-count elapsed months in timezones west of UTC
+  // (e.g. America/New_York), because "2026-03-01" UTC midnight falls on
+  // Feb 28 local time there. Using UTC getters on both sides keeps the
+  // result identical regardless of the runtime's local timezone.
+  const car = {
+    ...emptyCar,
+    status: "sold",
+    saleType: "finance",
+    paymentStartDate: "2026-01-01",
+    monthlyPayment: "200",
+    numberOfPayments: "12",
+    paymentsReceived: "0",
+  };
+  // Jan 1 -> Mar 1 reference date: 3 full months elapsed (Jan, Feb, Mar due dates).
+  const result = getPaymentStatus(car, new Date("2026-03-01"));
+  assert.equal(result.isOverdue, true);
+  assert.equal(result.paymentsBehind, 3);
+  assert.equal(result.amountOverdue, 600);
+});
+
 test("getCostBreakdown totals and averages each cost category across cars", () => {
   const cars = [
     { ...emptyCar, auctionPrice: "1000", repairCost: "100" },
@@ -223,6 +246,21 @@ test("getProfitByMonth groups sold cars by sold month, sorted ascending", () => 
   assert.deepEqual(byMonth.map((row) => row.month), ["2026-01", "2026-03"]);
   assert.equal(byMonth[0].profit, 3000);
   assert.equal(byMonth[1].profit, 3000);
+});
+
+test("getProfitByMonth buckets a first-of-month sale date timezone-independently (UTC getters)", () => {
+  // Regression test: "2026-03-01" parses as UTC midnight. Reading the month key with
+  // local getters (getFullYear/getMonth) instead of UTC getters would bucket this sale
+  // into "2026-02" in timezones west of UTC (e.g. America/New_York), since UTC
+  // midnight on Mar 1 is still Feb 28 local time there. UTC getters keep the bucket
+  // fixed at "2026-03" regardless of the runtime's local timezone.
+  const cars = [
+    { ...emptyCar, status: "sold", saleType: "cash", soldDate: "2026-03-01", soldPrice: "9000", auctionPrice: "6000" },
+  ];
+  const byMonth = getProfitByMonth(cars);
+  assert.equal(byMonth.length, 1);
+  assert.equal(byMonth[0].month, "2026-03");
+  assert.equal(byMonth[0].profit, 3000);
 });
 
 test("getAgingInventory sorts unsold cars by days descending and flags stale ones", () => {
