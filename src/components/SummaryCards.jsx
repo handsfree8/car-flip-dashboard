@@ -37,7 +37,7 @@ function SummaryCard({ title, value, icon, highlight }) {
           <p className="text-sm font-bold text-[#7d3fb2]">{title}</p>
           <p
             className={`break-words text-xl font-black sm:text-2xl ${
-              highlight === true ? "text-emerald-600" : highlight === false ? "text-red-600" : "text-[#221433]"
+              highlight === true ? "text-emerald-600" : highlight === false ? "text-amber-700" : "text-[#221433]"
             }`}
           >
             {value}
