@@ -5,7 +5,6 @@ import {
   numberValue,
   getInvestment,
   isSold,
-  getEstimatedValue,
   getExpectedSaleValue,
   getCollectedSoFar,
   getBalanceRemaining,
