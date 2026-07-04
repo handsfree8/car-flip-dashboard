@@ -58,7 +58,7 @@ export default function ReportsPanel({ cars }) {
             {profitByMonth.map((row) => (
               <div key={row.month} className="flex w-16 shrink-0 flex-col items-center gap-1">
                 <div
-                  className={`w-full rounded-t-lg ${row.profit >= 0 ? "bg-emerald-500" : "bg-red-500"}`}
+                  className={`w-full rounded-t-lg ${row.profit >= 0 ? "bg-emerald-500" : "bg-amber-500"}`}
                   style={{ height: `${Math.max((Math.abs(row.profit) / maxProfit) * 120, 4)}px` }}
                 />
                 <span className="text-[10px] font-bold text-[#5b2a86]">{row.label}</span>
@@ -83,7 +83,7 @@ export default function ReportsPanel({ cars }) {
             </thead>
             <tbody>
               {aging.map(({ car, days, isStale }) => (
-                <tr key={car.id} className={isStale ? "text-red-600" : "text-[#221433]"}>
+                <tr key={car.id} className={isStale ? "text-amber-700" : "text-[#221433]"}>
                   <td className="py-1 font-bold">
                     {car.year} {car.model || "Untitled Vehicle"}
                   </td>
@@ -113,7 +113,7 @@ export default function ReportsPanel({ cars }) {
               {overdue.map((car) => {
                 const status = getPaymentStatus(car);
                 return (
-                  <tr key={car.id} className="text-red-600">
+                  <tr key={car.id} className="text-amber-700">
                     <td className="py-1 font-bold">
                       {car.year} {car.model || "Untitled Vehicle"}
                     </td>
