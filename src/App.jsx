@@ -271,7 +271,7 @@ export default function CarSalesInventoryDashboard() {
         onDelete={handleDelete}
         onClose={handleCloseModal}
         saving={saving}
-        originLayoutId={selectedCarId === "new" ? "vehicle-card-new" : `vehicle-card-${selectedCarId}`}
+        originLayoutId={!selectedCarId || selectedCarId === "new" ? "vehicle-card-new" : `vehicle-card-${selectedCarId}`}
       />
     </div>
   );
