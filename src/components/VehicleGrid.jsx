@@ -153,7 +153,7 @@ function VehicleGroup({ title, cars, selectedCarId, onSelectCar }) {
       <div className="mb-3 flex items-center gap-2">
         <h3 className="text-base font-black text-[#3b1b6d]">{title}</h3>
         <span className="rounded-full bg-[#efe6f8] px-2 py-0.5 text-xs font-bold text-[#5b2a86]">
-          {cars.length} cars
+          {cars.length} {cars.length === 1 ? "car" : "cars"}
         </span>
       </div>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
