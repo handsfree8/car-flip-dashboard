@@ -22,17 +22,17 @@ export default function ReportsPanel({ cars }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black text-[#3b1b6d]">Reportes</h2>
+        <h2 className="text-xl font-black text-[#3b1b6d]">Reports</h2>
         <Button
           onClick={() => downloadCarsCsv(cars)}
           className="rounded-2xl bg-[#5b2a86] px-4 py-5 text-sm font-bold text-white hover:bg-[#3b1b6d]"
         >
-          <Download className="mr-2 h-4 w-4" /> Exportar CSV
+          <Download className="mr-2 h-4 w-4" /> Export CSV
         </Button>
       </div>
 
       <section className="rounded-3xl border border-purple-100 bg-white p-4 sm:p-5">
-        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Desglose de Costos (Total)</h3>
+        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Cost Breakdown (Total)</h3>
         <div className="space-y-2">
           {costBreakdown.map((row) => (
             <div key={row.key} className="flex items-center gap-3">
@@ -50,9 +50,9 @@ export default function ReportsPanel({ cars }) {
       </section>
 
       <section className="rounded-3xl border border-purple-100 bg-white p-4 sm:p-5">
-        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Ganancia por Mes</h3>
+        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Profit by Month</h3>
         {profitByMonth.length === 0 ? (
-          <p className="text-sm text-[#5b2a86]">Aún no hay carros vendidos.</p>
+          <p className="text-sm text-[#5b2a86]">No cars sold yet.</p>
         ) : (
           <div className="flex items-end gap-3 overflow-x-auto pb-2">
             {profitByMonth.map((row) => (
@@ -70,9 +70,9 @@ export default function ReportsPanel({ cars }) {
       </section>
 
       <section className="rounded-3xl border border-purple-100 bg-white p-4 sm:p-5">
-        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Inventario Envejecido</h3>
+        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Aging Inventory</h3>
         {aging.length === 0 ? (
-          <p className="text-sm text-[#5b2a86]">No hay carros disponibles en inventario.</p>
+          <p className="text-sm text-[#5b2a86]">No available vehicles in inventory.</p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead>
@@ -96,16 +96,16 @@ export default function ReportsPanel({ cars }) {
       </section>
 
       <section className="rounded-3xl border border-purple-100 bg-white p-4 sm:p-5">
-        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Pagos Atrasados</h3>
+        <h3 className="mb-3 text-lg font-black text-[#3b1b6d]">Overdue Payments</h3>
         {overdue.length === 0 ? (
-          <p className="text-sm text-[#5b2a86]">No hay pagos atrasados.</p>
+          <p className="text-sm text-[#5b2a86]">No overdue payments.</p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="text-xs font-bold uppercase text-[#7d3fb2]">
                 <th className="pb-2">Vehicle</th>
-                <th className="pb-2">Pagos Atrasados</th>
-                <th className="pb-2">Monto Atrasado</th>
+                <th className="pb-2">Payments Behind</th>
+                <th className="pb-2">Amount Overdue</th>
                 <th className="pb-2">Balance</th>
               </tr>
             </thead>
