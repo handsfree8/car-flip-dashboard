@@ -5,9 +5,9 @@ import { money, getInvestment, getEstimatedValue, getInventoryEquity } from "@/l
 
 const SUB_TABS = [
   { value: "info", label: "Info" },
-  { value: "costs", label: "Costos" },
-  { value: "sale", label: "Venta / Financiamiento" },
-  { value: "notes", label: "Notas" },
+  { value: "costs", label: "Costs" },
+  { value: "sale", label: "Sale / Financing" },
+  { value: "notes", label: "Notes" },
 ];
 
 export default function VehicleForm({ form, formTotals, onChange, onSave, onDelete, saving }) {
@@ -138,7 +138,7 @@ export default function VehicleForm({ form, formTotals, onChange, onSave, onDele
         <>
           {form.status !== "sold" ? (
             <p className="rounded-3xl bg-[#f7f4fb] p-4 text-sm text-[#5b2a86]">
-              Este vehículo aún no está vendido. Cambia el estatus a "Sold" en la pestaña Info para capturar los datos de venta.
+              This vehicle hasn't been sold yet. Change the status to "Sold" on the Info tab to capture the sale details.
             </p>
           ) : form.saleType === "cash" ? (
             <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
