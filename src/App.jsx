@@ -20,8 +20,8 @@ import ReportsPanel from "@/components/ReportsPanel";
 import AttentionBanner from "@/components/AttentionBanner";
 
 const TABS = [
-  { value: "inventory", label: "Inventario" },
-  { value: "reports", label: "Reportes" },
+  { value: "inventory", label: "Inventory" },
+  { value: "reports", label: "Reports" },
 ];
 
 export default function CarSalesInventoryDashboard() {
@@ -206,7 +206,7 @@ export default function CarSalesInventoryDashboard() {
               </p>
               <h1 className="text-2xl font-black tracking-tight sm:text-3xl md:text-5xl">Inventory & Profit Dashboard</h1>
               <p className="mt-3 max-w-3xl text-sm text-purple-100 sm:text-base">
-                Controla carros vendidos cash o a crédito, pagos recibidos, balance pendiente y ganancia real desde la nube.
+                Track cars sold cash or on credit, payments received, pending balance, and real profit — all from the cloud.
               </p>
               <p className="mt-2 text-xs font-semibold text-purple-100 sm:text-sm">{loading ? "Loading..." : status}</p>
             </div>
