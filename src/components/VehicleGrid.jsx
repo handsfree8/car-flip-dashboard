@@ -121,40 +121,47 @@ export default function VehicleGrid({ cars, selectedCarId, onSelectCar }) {
           <p className="font-bold">No hay carros que coincidan con el filtro</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {visibleCars.map((car) => {
             const days = getDaysInInventory(car);
             const paymentStatus = getPaymentStatus(car);
             return (
               <motion.button
-                whileHover={{ y: -3 }}
+                layoutId={`vehicle-card-${car.id}`}
+                whileHover={{ y: -8, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 key={car.id}
+                type="button"
                 onClick={() => onSelectCar(car)}
-                className={`overflow-hidden rounded-3xl border bg-white text-left shadow-sm transition ${
+                className={`group relative overflow-hidden rounded-3xl border bg-gradient-to-b from-white to-[#f7f2ff] text-left shadow-sm transition-shadow duration-300 hover:shadow-[0_20px_50px_-12px_rgba(139,92,246,0.45)] ${
                   selectedCarId === car.id
                     ? "border-[#5b2a86] ring-4 ring-purple-100"
-                    : "border-purple-100 hover:border-[#7d3fb2]"
+                    : "border-purple-100 hover:border-[#a879ff]"
                 }`}
               >
-                <div className="aspect-[4/3] bg-[#efe6f8]">
+                <div className="relative h-48 overflow-hidden bg-[#efe6f8] sm:h-56">
                   {car.photo ? (
-                    <img src={car.photo} alt={car.model || "Car"} className="h-full w-full object-cover" />
+                    <img
+                      src={car.photo}
+                      alt={car.model || "Car"}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
                   ) : (
                     <div className="flex h-full items-center justify-center text-[#7d3fb2]">
-                      <ImagePlus className="h-9 w-9" />
+                      <ImagePlus className="h-12 w-12" />
                     </div>
                   )}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
                 </div>
-                <div className="p-3">
-                  <p className="line-clamp-1 font-black text-[#221433]">
+                <div className="p-5">
+                  <p className="line-clamp-1 text-lg font-black text-[#221433]">
                     {car.year} {car.model || "Untitled Vehicle"}
                   </p>
                   <p className="mt-1 text-xs font-bold uppercase text-[#7d3fb2]">
                     {car.status === "sold" ? (car.saleType === "finance" ? "Credit Sale" : "Cash Sale") : "Available / Not Sold"}
                   </p>
                   <p
-                    className={`mt-1 text-sm font-black ${
+                    className={`mt-2 text-base font-black ${
                       getCarProfitOrEquity(car) >= 0 ? "text-emerald-600" : "text-amber-700"
                     }`}
                   >
@@ -164,7 +171,7 @@ export default function VehicleGrid({ cars, selectedCarId, onSelectCar }) {
                   {car.saleType === "finance" && car.status === "sold" && (
                     <p className="text-xs text-slate-500">{money(getBalanceRemaining(car))} balance</p>
                   )}
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-3 flex flex-wrap gap-1">
                     {car.status !== "sold" && days !== null && (
                       <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-[#5b2a86]">
                         {days}d in inventory
