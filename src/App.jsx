@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Cloud, RefreshCw, Car } from "lucide-react";
+import { motion } from "framer-motion";
+import { Plus, Cloud, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -14,7 +15,7 @@ import {
 } from "@/lib/carCalculations";
 import SummaryCards from "@/components/SummaryCards";
 import VehicleGrid from "@/components/VehicleGrid";
-import VehicleForm from "@/components/VehicleForm";
+import VehicleModal from "@/components/VehicleModal";
 import ReportsPanel from "@/components/ReportsPanel";
 import AttentionBanner from "@/components/AttentionBanner";
 
@@ -116,6 +117,11 @@ export default function CarSalesInventoryDashboard() {
     setActiveTab("inventory");
   }
 
+  function handleCloseModal() {
+    setSelectedCarId(null);
+    setForm(emptyCar);
+  }
+
   async function handleSave() {
     setSaving(true);
     setStatus("Saving to Supabase...");
@@ -209,9 +215,11 @@ export default function CarSalesInventoryDashboard() {
               <Button onClick={loadCarsFromSupabase} className="rounded-2xl bg-[#efe6f8] px-5 py-6 text-base font-bold text-[#4b2179] shadow-lg hover:bg-white">
                 <RefreshCw className="mr-2 h-5 w-5" /> Refresh
               </Button>
-              <Button onClick={handleNewCar} className="rounded-2xl bg-white px-5 py-6 text-base font-bold text-[#4b2179] shadow-lg hover:bg-purple-50">
-                <Plus className="mr-2 h-5 w-5" /> Add Vehicle
-              </Button>
+              <motion.div layoutId="vehicle-card-new">
+                <Button onClick={handleNewCar} className="rounded-2xl bg-white px-5 py-6 text-base font-bold text-[#4b2179] shadow-lg hover:bg-purple-50">
+                  <Plus className="mr-2 h-5 w-5" /> Add Vehicle
+                </Button>
+              </motion.div>
             </div>
           </div>
         </header>
@@ -236,38 +244,15 @@ export default function CarSalesInventoryDashboard() {
         </div>
 
         {activeTab === "inventory" ? (
-          <main className="grid gap-4 md:gap-6 xl:grid-cols-[0.9fr_1.4fr]">
-            <Card className="rounded-[2rem] border border-purple-100 bg-white/90 shadow-lg">
-              <CardContent className="p-4 sm:p-5 md:p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-black text-[#3b1b6d]">Vehicle Grid</h2>
-                  <span className="rounded-full bg-[#efe6f8] px-3 py-1 text-sm font-bold text-[#5b2a86]">{cars.length} cars</span>
-                </div>
-                <VehicleGrid cars={cars} selectedCarId={selectedCarId} onSelectCar={handleSelectCar} />
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-[2rem] border border-purple-100 bg-white/90 shadow-lg">
-              <CardContent className="p-4 sm:p-5 md:p-6">
-                {!selectedCarId ? (
-                  <div className="flex min-h-[420px] flex-col items-center justify-center rounded-3xl bg-[#f7f4fb] p-8 text-center md:min-h-[520px]">
-                    <Car className="mb-4 h-12 w-12 text-[#7d3fb2]" />
-                    <h2 className="text-2xl font-black text-[#3b1b6d]">Select or add a vehicle</h2>
-                    <p className="mt-2 max-w-sm text-[#5b2a86]">Haz click en un carro del grid o agrega uno nuevo para llenar el formulario.</p>
-                  </div>
-                ) : (
-                  <VehicleForm
-                    form={form}
-                    formTotals={formTotals}
-                    onChange={handleChange}
-                    onSave={handleSave}
-                    onDelete={handleDelete}
-                    saving={saving}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </main>
+          <Card className="rounded-[2rem] border border-purple-100 bg-white/90 shadow-lg">
+            <CardContent className="p-4 sm:p-5 md:p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-black text-[#3b1b6d]">Vehicle Grid</h2>
+                <span className="rounded-full bg-[#efe6f8] px-3 py-1 text-sm font-bold text-[#5b2a86]">{cars.length} cars</span>
+              </div>
+              <VehicleGrid cars={cars} selectedCarId={selectedCarId} onSelectCar={handleSelectCar} />
+            </CardContent>
+          </Card>
         ) : (
           <Card className="rounded-[2rem] border border-purple-100 bg-white/90 shadow-lg">
             <CardContent className="p-4 sm:p-5 md:p-6">
@@ -276,6 +261,18 @@ export default function CarSalesInventoryDashboard() {
           </Card>
         )}
       </div>
+
+      <VehicleModal
+        open={Boolean(selectedCarId)}
+        form={form}
+        formTotals={formTotals}
+        onChange={handleChange}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        onClose={handleCloseModal}
+        saving={saving}
+        originLayoutId={selectedCarId === "new" ? "vehicle-card-new" : `vehicle-card-${selectedCarId}`}
+      />
     </div>
   );
 }
