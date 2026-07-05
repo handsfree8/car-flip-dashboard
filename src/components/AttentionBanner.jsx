@@ -14,7 +14,7 @@ export default function AttentionBanner({ cars, onSelectCar }) {
   if (totalCount === 0) {
     return (
       <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
-        <CheckCircle2 className="h-5 w-5" /> Todo en orden
+        <CheckCircle2 className="h-5 w-5" /> All Clear
       </div>
     );
   }
@@ -27,7 +27,7 @@ export default function AttentionBanner({ cars, onSelectCar }) {
         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-bold"
       >
         <span className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" /> {totalCount} carro{totalCount === 1 ? "" : "s"} necesitan atención
+          <AlertTriangle className="h-5 w-5" /> {totalCount} vehicle{totalCount === 1 ? "" : "s"} need attention
         </span>
         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
@@ -35,7 +35,7 @@ export default function AttentionBanner({ cars, onSelectCar }) {
       {expanded && (
         <div className="space-y-4 border-t border-red-100 px-4 py-3">
           {vehiclesAtLoss.length > 0 && (
-            <AttentionSection title="Con pérdida">
+            <AttentionSection title="At a Loss">
               {vehiclesAtLoss.map(({ car, amount }) => (
                 <AttentionRow key={car.id} car={car} detail={money(amount)} onSelectCar={onSelectCar} />
               ))}
@@ -43,14 +43,14 @@ export default function AttentionBanner({ cars, onSelectCar }) {
           )}
 
           {overdue.length > 0 && (
-            <AttentionSection title="Pagos atrasados">
+            <AttentionSection title="Overdue Payments">
               {overdue.map((car) => {
                 const status = getPaymentStatus(car);
                 return (
                   <AttentionRow
                     key={car.id}
                     car={car}
-                    detail={`${status.paymentsBehind} pago(s) · ${money(status.amountOverdue)}`}
+                    detail={`${status.paymentsBehind} payment(s) · ${money(status.amountOverdue)}`}
                     onSelectCar={onSelectCar}
                   />
                 );
@@ -59,9 +59,9 @@ export default function AttentionBanner({ cars, onSelectCar }) {
           )}
 
           {staleInventory.length > 0 && (
-            <AttentionSection title="Inventario viejo">
+            <AttentionSection title="Aging Inventory">
               {staleInventory.map(({ car, days }) => (
-                <AttentionRow key={car.id} car={car} detail={`${days}d en inventario`} onSelectCar={onSelectCar} />
+                <AttentionRow key={car.id} car={car} detail={`${days}d in inventory`} onSelectCar={onSelectCar} />
               ))}
             </AttentionSection>
           )}
