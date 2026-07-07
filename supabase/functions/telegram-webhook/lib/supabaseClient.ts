@@ -34,8 +34,8 @@ export function createAppSupabaseClient(url: string, serviceRoleKey: string) {
     if (error) throw new Error(`clearPendingAction failed: ${error.message}`);
   }
 
-  async function listCars(): Promise<{ id: string; data: Record<string, unknown> }[]> {
-    const { data, error } = await client.from("cars").select("id, data");
+  async function listCars(): Promise<{ id: string; data: Record<string, unknown>; created_at: string }[]> {
+    const { data, error } = await client.from("cars").select("id, data, created_at");
     if (error) throw new Error(`listCars failed: ${error.message}`);
     return data ?? [];
   }
@@ -51,5 +51,10 @@ export function createAppSupabaseClient(url: string, serviceRoleKey: string) {
     if (error) throw new Error(`updateCarData failed: ${error.message}`);
   }
 
-  return { getPendingAction, setPendingAction, clearPendingAction, listCars, insertCar, updateCarData };
+  async function deleteCar(carId: string): Promise<void> {
+    const { error } = await client.from("cars").delete().eq("id", carId);
+    if (error) throw new Error(`deleteCar failed: ${error.message}`);
+  }
+
+  return { getPendingAction, setPendingAction, clearPendingAction, listCars, insertCar, updateCarData, deleteCar };
 }
