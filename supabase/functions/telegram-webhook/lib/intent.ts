@@ -12,7 +12,7 @@ const DELETE_PATTERNS: RegExp[] = [
 ];
 
 function normalize(text: string): string {
-  return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 export function isDeleteCommand(text: string): boolean {
