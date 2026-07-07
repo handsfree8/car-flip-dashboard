@@ -19,3 +19,9 @@ Deno.test("isDeleteCommand ignores purchase messages", () => {
   assertEquals(isDeleteCommand("compré un 2020 Toyota Corolla en 7200"), false);
   assertEquals(isDeleteCommand("hola"), false);
 });
+
+Deno.test("isDeleteCommand handles uppercase and accented input", () => {
+  assertEquals(isDeleteCommand("BORRAR TODO"), true);
+  assertEquals(isDeleteCommand("BÓRRAME el mustang"), true);
+  assertEquals(isDeleteCommand("ELIMINA UN CARRO"), true);
+});
