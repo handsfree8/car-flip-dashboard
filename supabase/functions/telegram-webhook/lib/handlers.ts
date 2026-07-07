@@ -14,6 +14,7 @@ import {
   type ExpenseDraft,
 } from "./expenseLogic.ts";
 import { EXPENSE_COST_FIELDS, getExpenseCategoryLabel } from "./costFields.ts";
+import { isDeleteCommand } from "./intent.ts";
 
 type TelegramClient = ReturnType<typeof createTelegramClient>;
 type ClaudeClient = ReturnType<typeof createClaudeClient>;
@@ -56,6 +57,10 @@ export async function handleUpdate(deps: Deps): Promise<void> {
 
 async function handleTextMessage(deps: Deps, text: string): Promise<void> {
   const { telegram, claude, supabase, chatId } = deps;
+  if (isDeleteCommand(text)) {
+    await startDeleteFlow(deps);
+    return;
+  }
   const today = new Date().toISOString().slice(0, 10);
   const extraction = await claude.extractCarPurchase(text, today);
 
@@ -78,6 +83,34 @@ async function handleTextMessage(deps: Deps, text: string): Promise<void> {
   await telegram.sendMessage(
     chatId,
     `Got it: ${draft.year} ${draft.model}, purchased for $${draft.purchasePrice} on ${draft.purchaseDate}. Confirm? (yes/no)`,
+  );
+}
+
+async function startDeleteFlow(deps: Deps): Promise<void> {
+  const { telegram, supabase, chatId } = deps;
+  const cars = await supabase.listCars();
+  const available = cars
+    .filter((entry) => (entry.data as Record<string, unknown>).status !== "sold")
+    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
+    .map((entry) => ({
+      id: entry.id,
+      year: String((entry.data as Record<string, unknown>).year ?? ""),
+      model: String((entry.data as Record<string, unknown>).model ?? ""),
+    }));
+
+  if (available.length === 0) {
+    await telegram.sendMessage(chatId, "You have no available (unsold) cars to delete.");
+    return;
+  }
+
+  await supabase.setPendingAction(
+    chatId,
+    "delete_car_select",
+    { cars: available } as unknown as Record<string, unknown>,
+  );
+  await telegram.sendMessage(
+    chatId,
+    `Which car do you want to delete?\n${formatCarDisambiguationList(available)}`,
   );
 }
 
@@ -234,6 +267,48 @@ async function resolvePending(deps: Deps, pending: PendingAction): Promise<void>
       const updatedData = applyExpenseToCarData(car.data, draft.category!, draft.amount!);
       await supabase.updateCarData(draft.carId!, updatedData);
       await telegram.sendMessage(chatId, `Saved: $${draft.amount} added to ${getExpenseCategoryLabel(draft.category!)}.`);
+      return;
+    }
+
+    case "delete_car_select": {
+      const payload = pending.payload as unknown as { cars: { id: string; year: string; model: string }[] };
+      const cars = payload.cars;
+      const selection = parseListSelection(text, cars.length);
+      if (selection === null) {
+        await telegram.sendMessage(chatId, `Please reply with a number from 1 to ${cars.length}.`);
+        return;
+      }
+      const chosen = cars[selection - 1];
+      const label = `${chosen.year} ${chosen.model}`;
+      await supabase.setPendingAction(
+        chatId,
+        "delete_car_confirm",
+        { carId: chosen.id, label } as unknown as Record<string, unknown>,
+      );
+      await telegram.sendMessage(chatId, `Delete the ${label}? This can't be undone. (yes/no)`);
+      return;
+    }
+
+    case "delete_car_confirm": {
+      const answer = parseYesNo(text);
+      if (answer === null) {
+        await telegram.sendMessage(chatId, "Please reply yes or no.");
+        return;
+      }
+      await supabase.clearPendingAction(chatId);
+      if (answer === "no") {
+        await telegram.sendMessage(chatId, "Cancelled.");
+        return;
+      }
+      const payload = pending.payload as unknown as { carId: string; label: string };
+      const cars = await supabase.listCars();
+      const exists = cars.some((entry) => entry.id === payload.carId);
+      if (!exists) {
+        await telegram.sendMessage(chatId, "That vehicle no longer exists, cancelling.");
+        return;
+      }
+      await supabase.deleteCar(payload.carId);
+      await telegram.sendMessage(chatId, `Deleted: ${payload.label}.`);
       return;
     }
 
