@@ -4,11 +4,13 @@ import { createClaudeClient } from "./lib/claudeClient.ts";
 import { createAppSupabaseClient } from "./lib/supabaseClient.ts";
 import { handleUpdate } from "./lib/handlers.ts";
 
-const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-const TELEGRAM_AUTHORIZED_CHAT_ID = Deno.env.get("TELEGRAM_AUTHORIZED_CHAT_ID")!;
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Secrets are trimmed defensively — a stray leading/trailing space or tab from
+// pasting into the dashboard would otherwise break the auth gate and API auth.
+const TELEGRAM_BOT_TOKEN = (Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "").trim();
+const TELEGRAM_AUTHORIZED_CHAT_ID = (Deno.env.get("TELEGRAM_AUTHORIZED_CHAT_ID") ?? "").trim();
+const ANTHROPIC_API_KEY = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").trim();
+const SUPABASE_URL = (Deno.env.get("SUPABASE_URL") ?? "").trim();
+const SUPABASE_SERVICE_ROLE_KEY = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
 
 const telegram = createTelegramClient(TELEGRAM_BOT_TOKEN);
 const claude = createClaudeClient(ANTHROPIC_API_KEY);
