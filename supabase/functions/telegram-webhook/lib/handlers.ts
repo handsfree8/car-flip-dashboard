@@ -62,8 +62,14 @@ async function handleTextMessage(deps: Deps, text: string): Promise<void> {
     return;
   }
   const today = new Date().toISOString().slice(0, 10);
-  const extraction = await claude.extractCarPurchase(text, today);
+  const interpreted = await claude.interpretMessage(text, today);
 
+  if (interpreted.kind === "reply") {
+    await telegram.sendMessage(chatId, interpreted.text);
+    return;
+  }
+
+  const extraction = interpreted.data;
   const draft: CarPurchaseDraft = {
     model: extraction.model,
     year: extraction.year,
@@ -74,7 +80,7 @@ async function handleTextMessage(deps: Deps, text: string): Promise<void> {
   if (!isCarPurchaseDraftComplete(draft)) {
     await telegram.sendMessage(
       chatId,
-      'I couldn\'t tell the model, year, and purchase price from that. Please tell me again, e.g. "I bought a 2018 Ford Mustang for $8,500".',
+      'Necesito el modelo, el año y el precio de compra. Por ejemplo: "compré un Ford Mustang 2018 en $8500".',
     );
     return;
   }
