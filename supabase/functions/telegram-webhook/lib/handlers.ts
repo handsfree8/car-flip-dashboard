@@ -13,7 +13,7 @@ import {
   parseYesNo,
   type ExpenseDraft,
 } from "./expenseLogic.ts";
-import { EXPENSE_COST_FIELDS, getExpenseCategoryLabel } from "./costFields.ts";
+import { EXPENSE_COST_FIELDS, getExpenseCategoryLabel, isValidExpenseCategory } from "./costFields.ts";
 import { isDeleteCommand } from "./intent.ts";
 import { applyExpenseItemToCarData, formatExpenseItemConfirmation, type ExpenseLineItem } from "./expenseItem.ts";
 
@@ -78,12 +78,15 @@ async function handleTextMessage(deps: Deps, text: string): Promise<void> {
 
   if (interpreted.kind === "expense") {
     const expense = interpreted.data;
-    const candidateCars = carSummaries.filter((car) => expense.matchedCarIds.includes(car.id));
+    const matchedIds = Array.isArray(expense.matchedCarIds) ? expense.matchedCarIds : [];
+    const candidateCars = carSummaries.filter((car) => matchedIds.includes(car.id));
     const draft: ExpenseDraft = {
       carId: candidateCars.length === 1 ? candidateCars[0].id : null,
       candidateCars,
       amount: expense.amount,
-      category: expense.category,
+      // Drop a hallucinated/invalid category so the flow asks from the real
+      // 10 instead of writing the amount into a phantom field getInvestment ignores.
+      category: isValidExpenseCategory(expense.category) ? expense.category : null,
       description: expense.description,
       labor: expense.labor,
     };
