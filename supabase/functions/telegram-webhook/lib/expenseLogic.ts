@@ -5,6 +5,8 @@ export interface ExpenseDraft {
   candidateCars: { id: string; year: string; model: string }[];
   amount: number | null;
   category: string | null;
+  description?: string | null;
+  labor?: number | null;
 }
 
 export type MissingField = "car" | "amount" | "category" | null;

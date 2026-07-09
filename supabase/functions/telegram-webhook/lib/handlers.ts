@@ -15,6 +15,7 @@ import {
 } from "./expenseLogic.ts";
 import { EXPENSE_COST_FIELDS, getExpenseCategoryLabel } from "./costFields.ts";
 import { isDeleteCommand } from "./intent.ts";
+import { applyExpenseItemToCarData, formatExpenseItemConfirmation, type ExpenseLineItem } from "./expenseItem.ts";
 
 type TelegramClient = ReturnType<typeof createTelegramClient>;
 type ClaudeClient = ReturnType<typeof createClaudeClient>;
@@ -62,10 +63,31 @@ async function handleTextMessage(deps: Deps, text: string): Promise<void> {
     return;
   }
   const today = new Date().toISOString().slice(0, 10);
-  const interpreted = await claude.interpretMessage(text, today);
+  const cars = await supabase.listCars();
+  const carSummaries = cars.map((car) => ({
+    id: car.id,
+    year: String((car.data as Record<string, unknown>).year ?? ""),
+    model: String((car.data as Record<string, unknown>).model ?? ""),
+  }));
+  const interpreted = await claude.interpretMessage(text, today, carSummaries);
 
   if (interpreted.kind === "reply") {
     await telegram.sendMessage(chatId, interpreted.text);
+    return;
+  }
+
+  if (interpreted.kind === "expense") {
+    const expense = interpreted.data;
+    const candidateCars = carSummaries.filter((car) => expense.matchedCarIds.includes(car.id));
+    const draft: ExpenseDraft = {
+      carId: candidateCars.length === 1 ? candidateCars[0].id : null,
+      candidateCars,
+      amount: expense.amount,
+      category: expense.category,
+      description: expense.description,
+      labor: expense.labor,
+    };
+    await advanceExpenseDraft(deps, draft);
     return;
   }
 
@@ -184,10 +206,17 @@ async function advanceExpenseDraft(deps: Deps, draft: ExpenseDraft): Promise<voi
     : "the selected vehicle";
 
   await supabase.setPendingAction(chatId, "expense_confirm", draft as unknown as Record<string, unknown>);
-  await telegram.sendMessage(
-    chatId,
-    `$${draft.amount} for ${getExpenseCategoryLabel(draft.category!)} on the ${carLabel}. Confirm? (yes/no)`,
-  );
+  if (draft.description) {
+    await telegram.sendMessage(
+      chatId,
+      formatExpenseItemConfirmation(carLabel, draft.description, draft.category!, draft.amount!, draft.labor ?? 0),
+    );
+  } else {
+    await telegram.sendMessage(
+      chatId,
+      `$${draft.amount} for ${getExpenseCategoryLabel(draft.category!)} on the ${carLabel}. Confirm? (yes/no)`,
+    );
+  }
 }
 
 async function resolvePending(deps: Deps, pending: PendingAction): Promise<void> {
@@ -270,9 +299,25 @@ async function resolvePending(deps: Deps, pending: PendingAction): Promise<void>
         await telegram.sendMessage(chatId, "That vehicle no longer exists, cancelling.");
         return;
       }
-      const updatedData = applyExpenseToCarData(car.data, draft.category!, draft.amount!);
-      await supabase.updateCarData(draft.carId!, updatedData);
-      await telegram.sendMessage(chatId, `Saved: $${draft.amount} added to ${getExpenseCategoryLabel(draft.category!)}.`);
+      if (draft.description) {
+        const item: ExpenseLineItem = {
+          id: crypto.randomUUID(),
+          description: draft.description,
+          category: draft.category!,
+          amount: draft.amount!,
+          labor: draft.labor ?? 0,
+          date: new Date().toISOString().slice(0, 10),
+        };
+        const updatedData = applyExpenseItemToCarData(car.data, item);
+        await supabase.updateCarData(draft.carId!, updatedData);
+        const total = item.amount + item.labor;
+        const carLabel = `${(car.data as Record<string, unknown>).year} ${(car.data as Record<string, unknown>).model}`;
+        await telegram.sendMessage(chatId, `Saved: ${item.description} ($${total}) on the ${carLabel}.`);
+      } else {
+        const updatedData = applyExpenseToCarData(car.data, draft.category!, draft.amount!);
+        await supabase.updateCarData(draft.carId!, updatedData);
+        await telegram.sendMessage(chatId, `Saved: $${draft.amount} added to ${getExpenseCategoryLabel(draft.category!)}.`);
+      }
       return;
     }
 
