@@ -15,26 +15,40 @@ export interface ReceiptExtraction {
   category: string | null;
 }
 
+export interface ExpenseExtraction {
+  matchedCarIds: string[];
+  description: string | null;
+  amount: number | null;
+  labor: number | null;
+  category: string | null;
+}
+
 export type InterpretResult =
   | { kind: "car_purchase"; data: CarPurchaseExtraction }
+  | { kind: "expense"; data: ExpenseExtraction }
   | { kind: "reply"; text: string };
 
 const AGENT_FALLBACK_REPLY = "Perdona, no entendí. ¿Me lo puedes decir de otra forma?";
 
 const AGENT_SYSTEM_PROMPT =
-  "You are the assistant for a car-flip inventory Telegram bot. You help the user with three things: " +
-  "(1) registering a car they bought, (2) deleting a car, and (3) logging expenses from receipt photos. " +
-  "If the user's message clearly describes buying a car AND includes the model, year, and purchase price, " +
-  "call the extract_car_purchase tool. Otherwise, reply with a short, friendly message in the SAME language " +
-  "the user wrote in. If their intent is unclear, or a described car purchase is missing the model, year, or " +
-  "price, ask one brief clarifying question instead of guessing. Never reply with the literal word \"unknown\". " +
-  "For thanks or greetings, respond warmly and briefly. If they ask what you can do, list the three capabilities " +
-  "in one or two sentences. Keep replies concise.";
+  "You are the assistant for a car-flip inventory Telegram bot. You help the user with: " +
+  "(1) registering a car they bought, (2) deleting a car, (3) logging expenses spent on a car they own. " +
+  "If the message clearly describes buying a car (with model, year, and price), call extract_car_purchase. " +
+  "If the message describes spending money on a part, repair, service, or fee for a car they already own " +
+  "(with or without a receipt), call log_expense: put the part/item cost in amount, any separately-mentioned " +
+  "labor in labor (else null), a short item name in description, your best category guess in category, and the " +
+  "ids of any inventory cars that could match in matchedCarIds. Otherwise, reply with a short, friendly message " +
+  "in the SAME language the user wrote in. If intent is unclear or key info is missing, ask one brief clarifying " +
+  "question instead of guessing. Never reply with the literal word \"unknown\". For thanks or greetings, respond " +
+  "warmly and briefly. If asked what you can do, list the three capabilities in one or two sentences. Keep replies concise.";
 
 export function parseInterpretResponse(content: Array<Record<string, unknown>>): InterpretResult {
   const blocks = content ?? [];
   const toolUse = blocks.find((block) => block.type === "tool_use");
   if (toolUse) {
+    if (toolUse.name === "log_expense") {
+      return { kind: "expense", data: toolUse.input as unknown as ExpenseExtraction };
+    }
     return { kind: "car_purchase", data: toolUse.input as unknown as CarPurchaseExtraction };
   }
   const text = blocks
@@ -153,7 +167,14 @@ export function createClaudeClient(apiKey: string) {
     return input as unknown as ReceiptExtraction;
   }
 
-  async function interpretMessage(messageText: string, today: string): Promise<InterpretResult> {
+  async function interpretMessage(
+    messageText: string,
+    today: string,
+    cars: { id: string; year: string; model: string }[] = [],
+  ): Promise<InterpretResult> {
+    const inventory = cars.length
+      ? cars.map((car) => `- id: ${car.id}, ${car.year} ${car.model}`).join("\n")
+      : "(no cars in inventory)";
     const response = await fetch(ANTHROPIC_API_URL, {
       method: "POST",
       headers: {
@@ -164,7 +185,7 @@ export function createClaudeClient(apiKey: string) {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 1024,
-        system: AGENT_SYSTEM_PROMPT,
+        system: `${AGENT_SYSTEM_PROMPT}\n\nCurrent inventory (match expenses to one of these car ids):\n${inventory}`,
         tools: [
           {
             name: "extract_car_purchase",
@@ -182,6 +203,30 @@ export function createClaudeClient(apiKey: string) {
                 },
               },
               required: ["model", "year", "purchasePrice", "purchaseDate"],
+            },
+          },
+          {
+            name: "log_expense",
+            description:
+              "Log money spent on a car the user already owns (a part, repair, service, or fee), with or without a receipt.",
+            input_schema: {
+              type: "object",
+              properties: {
+                matchedCarIds: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "IDs from the inventory that the expense could belong to (empty if none clearly match).",
+                },
+                description: { type: ["string", "null"], description: "Short item/service name, e.g. 'ABS sensor'." },
+                amount: { type: ["number", "null"], description: "The part/item cost in USD, excluding labor." },
+                labor: { type: ["number", "null"], description: "The labor cost in USD if mentioned, else null." },
+                category: {
+                  type: ["string", "null"],
+                  description:
+                    "One of: repairCost, partsCost, transportCost, adminFees, titleFees, taxes, detailingCost, advertisingCost, repoCost, miscCost. Null if unclear.",
+                },
+              },
+              required: ["matchedCarIds", "description", "amount", "labor", "category"],
             },
           },
         ],
