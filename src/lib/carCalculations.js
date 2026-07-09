@@ -29,6 +29,7 @@ export const emptyCar = {
   repoCost: "",
   financingNotes: "",
   notes: "",
+  expenses: [],
 };
 
 export const COST_FIELDS = [

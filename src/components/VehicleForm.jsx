@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { money, getInvestment, getEstimatedValue, getInventoryEquity } from "@/lib/carCalculations";
+import ExpenseTable from "@/components/ExpenseTable";
+import CostBreakdownChart from "@/components/CostBreakdownChart";
 
 const SUB_TABS = [
   { value: "info", label: "Info" },
@@ -131,6 +133,15 @@ export default function VehicleForm({ form, formTotals, onChange, onSave, onDele
               <MiniTotal title="Estimated Equity" value={money(getInventoryEquity(form))} />
             </section>
           )}
+
+          <div className="mt-4">
+            <CostBreakdownChart car={form} />
+          </div>
+
+          <div className="mt-4">
+            <p className="mb-2 text-sm font-black uppercase tracking-wide text-[#7d3fb2]">Itemized Expenses</p>
+            <ExpenseTable expenses={form.expenses} />
+          </div>
         </>
       )}
 
