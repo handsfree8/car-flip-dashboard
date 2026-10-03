@@ -179,7 +179,9 @@ function VehicleGroup({ title, cars, selectedCarId, onSelectCar }) {
                   <img
                     src={car.photo}
                     alt={car.model || "Car"}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full transform-gpu object-cover transition-transform duration-500 will-change-transform group-hover:scale-110"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[#7d3fb2]">

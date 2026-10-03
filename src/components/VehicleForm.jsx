@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Save, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { money, getInvestment, getEstimatedValue, getInventoryEquity } from "@/lib/carCalculations";
+import { compressImageFile } from "@/lib/compressImage";
 import ExpenseTable from "@/components/ExpenseTable";
 import CostBreakdownChart from "@/components/CostBreakdownChart";
 
@@ -16,15 +17,20 @@ export default function VehicleForm({ form, formTotals, onChange, onSave, onDele
   const [activeSubTab, setActiveSubTab] = useState("info");
   const fileInputRef = useRef(null);
 
-  function handleImageUpload(event) {
+  async function handleImageUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      onChange("photo", reader.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Resize + compress before storing so photos stay small (~150-250 KB).
+      const dataUrl = await compressImageFile(file, { maxSize: 1400, quality: 0.75 });
+      onChange("photo", dataUrl);
+    } catch {
+      // Fallback: keep the original if compression fails for any reason.
+      const reader = new FileReader();
+      reader.onloadend = () => onChange("photo", reader.result);
+      reader.readAsDataURL(file);
+    }
   }
 
   return (
@@ -36,7 +42,7 @@ export default function VehicleForm({ form, formTotals, onChange, onSave, onDele
           className="group relative h-48 w-full overflow-hidden rounded-3xl border-2 border-dashed border-purple-200 bg-[#efe6f8] sm:h-56 md:h-44 md:w-56 md:flex-none"
         >
           {form.photo ? (
-            <img src={form.photo} alt="Vehicle" className="h-full w-full object-cover" />
+            <img src={form.photo} alt="Vehicle" loading="lazy" decoding="async" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-[#5b2a86]">
               <Upload className="mb-2 h-8 w-8" />
