@@ -224,7 +224,7 @@ export default function CarSalesInventoryDashboard() {
           </div>
         </header>
 
-        <SummaryCards summary={summary} />
+        <SummaryCards summary={summary} cars={cars} />
 
         <AttentionBanner cars={cars} onSelectCar={handleSelectCarFromAttention} />
 
